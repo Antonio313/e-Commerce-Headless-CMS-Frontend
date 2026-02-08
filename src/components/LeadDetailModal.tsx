@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Mail, Phone, MapPin, Calendar, TrendingUp, User, MessageSquare, Send } from 'lucide-react';
+import { X, Mail, Phone, Calendar, TrendingUp, User, MessageSquare, Send } from 'lucide-react';
 import api from '../lib/api';
 
 interface Lead {

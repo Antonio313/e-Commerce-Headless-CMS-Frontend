@@ -139,7 +139,7 @@ export default function Dashboard() {
 }
 
 function StatCard({ title, value, icon, color, suffix = '' }: any) {
-  const colors = {
+  const colors: Record<string, string> = {
     blue: 'bg-blue-500',
     green: 'bg-green-500',
     purple: 'bg-purple-500',
@@ -165,7 +165,7 @@ function StatCard({ title, value, icon, color, suffix = '' }: any) {
 
 function PipelineItem({ label, count, total, color }: any) {
   const percentage = total > 0 ? (count / total) * 100 : 0;
-  const colors = {
+  const colors: Record<string, string> = {
     gray: 'bg-gray-500',
     blue: 'bg-blue-500',
     yellow: 'bg-yellow-500',
@@ -190,7 +190,7 @@ function PipelineItem({ label, count, total, color }: any) {
   );
 }
 
-function QualityItem({ label, count, percentage, color }: any) {
+function QualityItem({ label, count, percentage }: any) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-gray-700">{label}</span>

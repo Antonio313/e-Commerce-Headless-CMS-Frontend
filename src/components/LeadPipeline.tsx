@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
-import { TrendingUp, Mail, Phone, Calendar, DollarSign, User, MessageSquare } from 'lucide-react';
+import { TrendingUp, Mail, Phone, Calendar, User, MessageSquare } from 'lucide-react';
 import LeadDetailModal from './LeadDetailModal';
 
 interface Lead {
@@ -106,11 +106,6 @@ export default function LeadPipeline() {
     if (score >= 61) return '🔴 Hot';
     if (score >= 31) return '🟡 Warm';
     return '🔵 Cold';
-  };
-
-  const getTotalValue = () => {
-    // This is a simplified calculation - in reality you'd sum up wishlist values
-    return leads.reduce((sum, lead) => sum + (lead.score * 100), 0);
   };
 
   if (loading) {
