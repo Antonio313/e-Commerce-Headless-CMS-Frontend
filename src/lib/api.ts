@@ -18,11 +18,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 errors (unauthorized)
+// Handle 401 errors (unauthorized) - skip for login endpoint
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
