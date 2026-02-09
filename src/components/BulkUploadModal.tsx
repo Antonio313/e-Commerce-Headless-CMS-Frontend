@@ -99,10 +99,10 @@ JT-0002,Sample Necklace,Elegant gold necklace,2000,2500,brand-id,category-id,Gol
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg max-w-lg sm:max-w-2xl lg:max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Products</h2>
           <button
             onClick={onClose}
@@ -113,7 +113,7 @@ JT-0002,Sample Necklace,Elegant gold necklace,2000,2500,brand-id,category-id,Gol
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {/* Instructions */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
             <h3 className="font-semibold text-blue-900 mb-2">Instructions:</h3>

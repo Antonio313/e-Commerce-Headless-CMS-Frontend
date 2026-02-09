@@ -60,35 +60,35 @@ export default function Leads() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Leads</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Leads</h1>
           <p className="text-gray-600 mt-1">{stats.total} total leads</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md transition-colors flex-1 sm:flex-none justify-center ${
               viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             <List className="w-4 h-4" />
-            List View
+            List
           </button>
           <button
             onClick={() => setViewMode('pipeline')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md transition-colors flex-1 sm:flex-none justify-center ${
               viewMode === 'pipeline' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            Pipeline View
+            Pipeline
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -134,7 +134,7 @@ export default function Leads() {
         <>
           {/* Filters */}
           <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFilter('all')}
                 className={`px-4 py-2 rounded-md ${
@@ -178,8 +178,75 @@ export default function Leads() {
             </div>
           </div>
 
-          {/* Leads Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {leads.map((lead) => (
+              <div
+                key={lead.id}
+                onClick={() => setSelectedLeadId(lead.id)}
+                className="bg-white rounded-lg shadow p-4 cursor-pointer active:bg-gray-50"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">{lead.name}</h3>
+                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                      <Mail className="w-3 h-3" />
+                      <span className="truncate max-w-[180px]">{lead.email}</span>
+                    </div>
+                    {lead.phone && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                        <Phone className="w-3 h-3" />
+                        {lead.phone}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">{lead.score}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        lead.status === 'NEW'
+                          ? 'bg-blue-100 text-blue-800'
+                          : lead.status === 'CONTACTED'
+                          ? 'bg-purple-100 text-purple-800'
+                          : lead.status === 'QUALIFIED'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : lead.status === 'CONVERTED'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {lead.status}
+                    </span>
+                    <span className="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                      {lead.source}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(lead.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full ${
+                        lead.score >= 61
+                          ? 'bg-red-500'
+                          : lead.score >= 31
+                          ? 'bg-yellow-500'
+                          : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${lead.score}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Leads Table */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

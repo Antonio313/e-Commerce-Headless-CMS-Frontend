@@ -402,9 +402,9 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     : null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg max-w-lg sm:max-w-2xl lg:max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">
             {product ? 'Edit Product' : 'Add New Product'}
           </h2>
@@ -413,7 +413,7 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           {/* Basic Information */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>

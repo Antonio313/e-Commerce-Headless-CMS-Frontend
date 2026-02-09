@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Tag, Edit, Trash2, Plus } from 'lucide-react';
+import { Tag, Edit, Trash2, Plus, Eye } from 'lucide-react';
 
 interface Brand {
   id: string;
@@ -12,6 +13,7 @@ interface Brand {
 }
 
 export default function Brands() {
+  const navigate = useNavigate();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -107,9 +109,9 @@ export default function Brands() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Brands</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Brands</h1>
           <p className="text-gray-600 mt-1">{brands.length} total brands</p>
         </div>
         <button
@@ -138,6 +140,13 @@ export default function Brands() {
                 </div>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/products?brand=${brand.id}`)}
+                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                  title="View products by this brand"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => handleEditBrand(brand)}
                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"

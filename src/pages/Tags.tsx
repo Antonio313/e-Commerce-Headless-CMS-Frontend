@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Tags as TagsIcon, Edit, Trash2, Plus } from 'lucide-react';
+import { Tags as TagsIcon, Edit, Trash2, Plus, Eye } from 'lucide-react';
 
 interface Tag {
   id: string;
@@ -12,6 +13,7 @@ interface Tag {
 }
 
 export default function Tags() {
+  const navigate = useNavigate();
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -109,9 +111,9 @@ export default function Tags() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tags</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tags</h1>
           <p className="text-gray-600 mt-1">{tags.length} total tags</p>
         </div>
         <button
@@ -143,6 +145,13 @@ export default function Tags() {
                 </div>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/products?tag=${tag.id}`)}
+                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                  title="View products with this tag"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => handleEditTag(tag)}
                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"

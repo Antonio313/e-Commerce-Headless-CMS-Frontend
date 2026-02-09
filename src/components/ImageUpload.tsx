@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Upload, Image as ImageIcon, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import api from '../lib/api';
+import api, { API_URL } from '../lib/api';
 
 interface ProductImage {
   id: string;
@@ -107,7 +107,7 @@ export default function ImageUpload({ productId, images, onImagesChange }: Image
     if (url.startsWith('http')) {
       return url;
     }
-    return `http://localhost:5001${url}`;
+    return `${API_URL}${url}`;
   };
 
   return (

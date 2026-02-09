@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { FolderTree, Edit, Trash2, Plus, ChevronRight, ChevronDown } from 'lucide-react';
+import { FolderTree, Edit, Trash2, Plus, ChevronRight, ChevronDown, Eye, Package } from 'lucide-react';
 
 interface Subcategory {
   id: string;
@@ -19,6 +20,7 @@ interface Category {
 }
 
 export default function Categories() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +31,9 @@ export default function Categories() {
     name: '',
     description: '',
   });
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [deletingSubcategory, setDeletingSubcategory] = useState<{ id: string; name: string; categoryId: string; productCount: number } | null>(null);
+  const [reassignTarget, setReassignTarget] = useState<string>('clear');
 
   useEffect(() => {
     fetchCategories();
@@ -118,16 +123,46 @@ export default function Categories() {
   };
 
   const handleDeleteSubcategory = async (categoryId: string, subcategoryId: string) => {
-    if (!confirm('Are you sure you want to delete this subcategory? This may affect associated products.')) {
-      return;
-    }
+    const category = categories.find(c => c.id === categoryId);
+    const subcategory = category?.subcategories?.find(s => s.id === subcategoryId);
+    if (!subcategory) return;
 
     try {
-      await api.delete(`/api/admin/categories/${categoryId}/subcategories/${subcategoryId}`);
+      // First attempt without reassignment — backend will tell us if products exist
+      await api.delete(`/api/admin/categories/subcategories/${subcategoryId}`);
+      fetchCategories();
+    } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.requiresReassignment) {
+        // Products exist — show reassignment modal
+        setDeletingSubcategory({
+          id: subcategoryId,
+          name: subcategory.name,
+          categoryId,
+          productCount: error.response.data.productCount
+        });
+        setReassignTarget('clear');
+        setShowReassignModal(true);
+      } else {
+        console.error('Error deleting subcategory:', error);
+        alert(error.response?.data?.error || 'Failed to delete subcategory');
+      }
+    }
+  };
+
+  const handleConfirmReassignDelete = async () => {
+    if (!deletingSubcategory) return;
+
+    try {
+      const reassignTo = reassignTarget === 'clear' ? null : reassignTarget;
+      await api.delete(`/api/admin/categories/subcategories/${deletingSubcategory.id}`, {
+        data: { reassignTo }
+      });
+      setShowReassignModal(false);
+      setDeletingSubcategory(null);
       fetchCategories();
     } catch (error: any) {
       console.error('Error deleting subcategory:', error);
-      alert(error.response?.data?.message || 'Failed to delete subcategory');
+      alert(error.response?.data?.error || 'Failed to delete subcategory');
     }
   };
 
@@ -176,9 +211,9 @@ export default function Categories() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Categories</h1>
           <p className="text-gray-600 mt-1">{categories.length} categories</p>
         </div>
         <button
@@ -214,17 +249,43 @@ export default function Categories() {
                     <p className="text-sm text-gray-500">{category.description}</p>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">
-                  {category.subcategories?.length || 0} subcategories
+                <div className="hidden sm:flex items-center gap-3 text-sm text-gray-500">
+                  <span>{category.subcategories?.length || 0} subcategories</span>
+                  <span className="flex items-center gap-1">
+                    <Package className="w-3.5 h-3.5" />
+                    {category.productCount || 0} products
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <button
+                  onClick={() => navigate(`/products?category=${category.id}`)}
+                  className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                  title="View products in this category"
+                >
+                  <Eye className="w-4 h-4" />
+                  View Products
+                </button>
+                <button
+                  onClick={() => navigate(`/products?category=${category.id}`)}
+                  className="sm:hidden p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                  title="View products"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => handleAddSubcategory(category.id)}
-                  className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  className="hidden sm:inline-flex px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                 >
                   Add Subcategory
+                </button>
+                <button
+                  onClick={() => handleAddSubcategory(category.id)}
+                  className="sm:hidden p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  title="Add subcategory"
+                >
+                  <Plus className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleEditCategory(category)}
@@ -249,16 +310,29 @@ export default function Categories() {
                 {category.subcategories.map((subcategory) => (
                   <div
                     key={subcategory.id}
-                    className="flex items-center justify-between p-4 pl-16 hover:bg-gray-100 border-b last:border-b-0"
+                    className="flex items-center justify-between p-4 pl-8 sm:pl-16 hover:bg-gray-100 border-b last:border-b-0"
                   >
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{subcategory.name}</h4>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900">{subcategory.name}</h4>
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Package className="w-3 h-3" />
+                          {subcategory.productCount || 0}
+                        </span>
+                      </div>
                       {subcategory.description && (
                         <p className="text-sm text-gray-500">{subcategory.description}</p>
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 sm:gap-2">
+                      <button
+                        onClick={() => navigate(`/products?category=${category.id}&subcategory=${subcategory.id}`)}
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                        title="View products in this subcategory"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleEditSubcategory(subcategory, category.id)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
@@ -294,6 +368,100 @@ export default function Categories() {
             <Plus className="w-5 h-5" />
             Add Your First Category
           </button>
+        </div>
+      )}
+
+      {/* Reassignment Modal */}
+      {showReassignModal && deletingSubcategory && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="border-b px-4 sm:px-6 py-4">
+              <h2 className="text-lg font-bold text-gray-900">Delete Subcategory</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                <span className="font-medium text-gray-900">{deletingSubcategory.name}</span> has{' '}
+                <span className="font-semibold text-red-600">{deletingSubcategory.productCount}</span>{' '}
+                product(s). Choose how to handle them before deleting.
+              </p>
+            </div>
+
+            <div className="p-4 sm:p-6 space-y-4">
+              <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="reassign"
+                  value="clear"
+                  checked={reassignTarget === 'clear'}
+                  onChange={() => setReassignTarget('clear')}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Remove subcategory from products</div>
+                  <div className="text-sm text-gray-500">Products will keep their category but lose the subcategory assignment</div>
+                </div>
+              </label>
+
+              {(() => {
+                const parentCategory = categories.find(c => c.id === deletingSubcategory.categoryId);
+                const siblingSubcategories = parentCategory?.subcategories?.filter(
+                  (s) => s.id !== deletingSubcategory.id
+                ) || [];
+
+                if (siblingSubcategories.length === 0) return null;
+
+                return (
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="reassign"
+                      value="move"
+                      checked={reassignTarget !== 'clear'}
+                      onChange={() => setReassignTarget(siblingSubcategories[0]?.id || 'clear')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Move to another subcategory</div>
+                      <select
+                        value={reassignTarget === 'clear' ? '' : reassignTarget}
+                        onChange={(e) => setReassignTarget(e.target.value)}
+                        onClick={() => {
+                          if (reassignTarget === 'clear' && siblingSubcategories.length > 0) {
+                            setReassignTarget(siblingSubcategories[0].id);
+                          }
+                        }}
+                        disabled={reassignTarget === 'clear'}
+                        className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                      >
+                        <option value="">Select subcategory...</option>
+                        {siblingSubcategories.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name} ({sub.productCount || 0} products)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </label>
+                );
+              })()}
+            </div>
+
+            <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 border-t">
+              <button
+                onClick={() => {
+                  setShowReassignModal(false);
+                  setDeletingSubcategory(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReassignDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete & Reassign
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

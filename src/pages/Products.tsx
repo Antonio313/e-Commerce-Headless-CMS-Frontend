@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import api from '../lib/api';
+import { useSearchParams } from 'react-router-dom';
+import api, { API_URL } from '../lib/api';
 import { Package, DollarSign, Tag, Edit, Trash2, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Link as LinkIcon, Copy, Upload, CheckSquare, Square } from 'lucide-react';
 import ProductForm from '../components/ProductForm';
 import ProductRelationshipsModal from '../components/ProductRelationshipsModal';
@@ -12,6 +13,8 @@ interface Product {
   price: number;
   brand: { name: string };
   category: { name: string };
+  subcategoryId?: string;
+  subcategory?: { id: string; name: string };
   status: string;
   inStock: boolean;
   featured: boolean;
@@ -20,17 +23,21 @@ interface Product {
 }
 
 export default function Products() {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [allFilteredProducts, setAllFilteredProducts] = useState<Product[]>([]); // Track all filtered products for stats
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [brandFilter, setBrandFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+  const [subcategoryFilter, setSubcategoryFilter] = useState(searchParams.get('subcategory') || '');
+  const [tagFilter, setTagFilter] = useState(searchParams.get('tag') || '');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [brands, setBrands] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showRelationshipsModal, setShowRelationshipsModal] = useState(false);
@@ -49,18 +56,21 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
-  }, [filter, searchQuery, brandFilter, categoryFilter, minPrice, maxPrice, sortBy, sortOrder, currentPage]);
+  }, [filter, searchQuery, brandFilter, categoryFilter, subcategoryFilter, tagFilter, minPrice, maxPrice, sortBy, sortOrder, currentPage]);
 
   const fetchBrandsAndCategories = async () => {
     try {
-      const [brandsRes, categoriesRes] = await Promise.all([
+      const [brandsRes, categoriesRes, tagsRes] = await Promise.all([
         api.get('/api/admin/brands'),
         api.get('/api/admin/categories'),
+        api.get('/api/admin/tags'),
       ]);
       const brandsData = brandsRes.data.brands || brandsRes.data;
       const categoriesData = categoriesRes.data.categories || categoriesRes.data;
+      const tagsData = tagsRes.data.tags || tagsRes.data;
       setBrands(Array.isArray(brandsData) ? brandsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      setTags(Array.isArray(tagsData) ? tagsData : []);
     } catch (error) {
       console.error('Error fetching brands/categories:', error);
     }
@@ -80,6 +90,12 @@ export default function Products() {
       }
       if (categoryFilter) {
         params.categoryId = categoryFilter;
+      }
+      if (subcategoryFilter) {
+        params.subcategoryId = subcategoryFilter;
+      }
+      if (tagFilter) {
+        params.tagId = tagFilter;
       }
 
       const response = await api.get('/api/admin/products', { params });
@@ -279,7 +295,7 @@ export default function Products() {
   const getImageUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `http://localhost:5001${url}`;
+    return `${API_URL}${url}`;
   };
 
   const getPrimaryImage = (product: Product) => {
@@ -318,9 +334,9 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-600 mt-1">
             {stats.total} total products
             {selectedProducts.length > 0 && (
@@ -330,17 +346,18 @@ export default function Products() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowBulkUploadModal(true)}
-            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2"
+            className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2 flex-1 sm:flex-none justify-center"
           >
             <Upload className="w-4 h-4" />
-            Bulk Upload
+            <span className="hidden sm:inline">Bulk Upload</span>
+            <span className="sm:hidden">Upload</span>
           </button>
           <button
             onClick={handleAddProduct}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 flex-1 sm:flex-none"
           >
             Add Product
           </button>
@@ -350,32 +367,32 @@ export default function Products() {
       {/* Bulk Actions Bar */}
       {selectedProducts.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <span className="text-sm font-medium text-blue-900">
               {selectedProducts.length} product(s) selected
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleBulkPublish}
-                className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
               >
                 Publish
               </button>
               <button
                 onClick={handleBulkDraft}
-                className="px-4 py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700"
               >
-                Move to Draft
+                Draft
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
               >
                 Delete
               </button>
               <button
                 onClick={() => setSelectedProducts([])}
-                className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300"
               >
                 Cancel
               </button>
@@ -399,7 +416,7 @@ export default function Products() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -443,7 +460,7 @@ export default function Products() {
         {/* Status Filters */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-md ${
@@ -472,7 +489,7 @@ export default function Products() {
         </div>
 
         {/* Advanced Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
             <select
@@ -493,13 +510,51 @@ export default function Products() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setSubcategoryFilter('');
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Categories</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+            <select
+              value={subcategoryFilter}
+              onChange={(e) => setSubcategoryFilter(e.target.value)}
+              disabled={!categoryFilter}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+            >
+              <option value="">All Subcategories</option>
+              {categoryFilter && categories
+                .find((c) => c.id === categoryFilter)
+                ?.subcategories?.map((sub: any) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+            <select
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Tags</option>
+              {tags.map((tag: any) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
                 </option>
               ))}
             </select>
@@ -529,12 +584,14 @@ export default function Products() {
         </div>
 
         {/* Clear Filters Button */}
-        {(brandFilter || categoryFilter || minPrice || maxPrice) && (
+        {(brandFilter || categoryFilter || subcategoryFilter || tagFilter || minPrice || maxPrice) && (
           <div className="flex justify-end">
             <button
               onClick={() => {
                 setBrandFilter('');
                 setCategoryFilter('');
+                setSubcategoryFilter('');
+                setTagFilter('');
                 setMinPrice('');
                 setMaxPrice('');
               }}
@@ -546,8 +603,110 @@ export default function Products() {
         )}
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <button
+            onClick={handleSelectAll}
+            className="flex items-center gap-2 text-sm text-gray-600"
+          >
+            {selectedProducts.length === products.length && products.length > 0 ? (
+              <CheckSquare className="w-5 h-5 text-blue-600" />
+            ) : (
+              <Square className="w-5 h-5 text-gray-400" />
+            )}
+            Select All
+          </button>
+          <span className="text-sm text-gray-500">{products.length} shown</span>
+        </div>
+        {products.map((product) => {
+          const primaryImage = getPrimaryImage(product);
+          const isSelected = selectedProducts.includes(product.id);
+          return (
+            <div
+              key={product.id}
+              className={`bg-white rounded-lg shadow p-4 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+            >
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSelectProduct(product.id)}
+                  className="self-start mt-1 p-0.5"
+                >
+                  {isSelected ? (
+                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <Square className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+                <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                  {primaryImage ? (
+                    <img
+                      src={getImageUrl(primaryImage.url)}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <Package className="w-6 h-6" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
+                  <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm font-semibold text-gray-900">${product.price.toLocaleString()}</span>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        product.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-800'
+                          : product.status === 'DRAFT'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {product.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <div className="flex gap-1 text-xs text-gray-500">
+                  {product.brand?.name && <span>{product.brand.name}</span>}
+                  {product.brand?.name && product.category?.name && <span>&middot;</span>}
+                  {product.category?.name && <span>{product.category.name}</span>}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleEditProduct(product)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md"
+                    title="Edit"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDuplicateProduct(product)}
+                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-md"
+                    title="Duplicate"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(product.id)}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Products Table */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -689,81 +848,83 @@ export default function Products() {
             })}
           </tbody>
         </table>
+      </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="bg-white rounded-lg shadow px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="inline-flex items-center text-sm text-gray-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Page <span className="font-medium">{currentPage}</span> of{' '}
+                <span className="font-medium">{totalPages}</span>
+              </p>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{totalPages}</span>
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  {[...Array(totalPages)].map((_, idx) => {
-                    const page = idx + 1;
-                    // Show first page, last page, current page, and pages around current
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            currentPage === page
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    } else if (page === currentPage - 2 || page === currentPage + 2) {
-                      return <span key={page} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
-                    }
-                    return null;
-                  })}
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </nav>
-              </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                {[...Array(totalPages)].map((_, idx) => {
+                  const page = idx + 1;
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          currentPage === page
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (page === currentPage - 2 || page === currentPage + 2) {
+                    return <span key={page} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
+                  }
+                  return null;
+                })}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </nav>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Product Form Modal */}
       {showForm && (

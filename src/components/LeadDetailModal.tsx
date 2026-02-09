@@ -136,13 +136,13 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
   const scoreLabel = lead.score >= 61 ? '🔥 HOT LEAD' : lead.score >= 31 ? '⚡ WARM LEAD' : '❄️ COLD LEAD';
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg max-w-lg sm:max-w-2xl lg:max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{lead.name}</h2>
-            <div className="flex items-center gap-2 mt-1">
+        <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-4 flex justify-between items-start gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{lead.name}</h2>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <span className={`px-3 py-1 rounded-full text-sm font-bold text-white ${scoreColor}`}>
                 {scoreLabel} - {lead.score}/100
               </span>
@@ -163,7 +163,7 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Contact Information */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>

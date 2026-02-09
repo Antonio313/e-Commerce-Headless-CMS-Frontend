@@ -119,7 +119,7 @@ export default function LeadPipeline() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
         {PIPELINE_STAGES.map((stage) => {
           const stageLeads = getLeadsByStage(stage.id);
           return (
@@ -143,7 +143,7 @@ export default function LeadPipeline() {
           return (
             <div
               key={stage.id}
-              className={`flex-shrink-0 w-80 bg-gray-50 rounded-lg transition-all ${
+              className={`flex-shrink-0 w-72 sm:w-80 bg-gray-50 rounded-lg transition-all ${
                 isHovered ? 'ring-2 ring-blue-500 bg-blue-50' : ''
               }`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
