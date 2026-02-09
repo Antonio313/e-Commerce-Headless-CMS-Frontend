@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api, { API_URL } from '../lib/api';
+import api from '../lib/api';
 import { Users, UserPlus, Award, TrendingUp, Mail, Phone } from 'lucide-react';
 import CustomerDetailModal from '../components/CustomerDetailModal';
 
