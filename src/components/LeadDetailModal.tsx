@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Mail, Phone, Calendar, TrendingUp, User, MessageSquare, Send } from 'lucide-react';
+import { X, Mail, Phone, Calendar, TrendingUp, User, MessageSquare, Send, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 
 interface Lead {
@@ -45,6 +45,7 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
   const [newNote, setNewNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchLeadDetails();
@@ -111,6 +112,22 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
     }
   };
 
+  const handleDelete = async () => {
+    if (!lead || !window.confirm(`Are you sure you want to delete the lead for "${lead.name}"? This will also delete all associated notes.`)) return;
+
+    setDeleting(true);
+    try {
+      await api.delete(`/api/admin/leads/${lead.id}`);
+      onUpdate?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Error deleting lead:', error);
+      alert(error.response?.data?.error || 'Failed to delete lead');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
@@ -149,7 +166,6 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                 lead.status === 'NEW' ? 'bg-blue-100 text-blue-800' :
                 lead.status === 'CONTACTED' ? 'bg-purple-100 text-purple-800' :
-                lead.status === 'QUALIFIED' ? 'bg-yellow-100 text-yellow-800' :
                 lead.status === 'SCHEDULED' ? 'bg-orange-100 text-orange-800' :
                 lead.status === 'CONVERTED' ? 'bg-green-100 text-green-800' :
                 'bg-gray-100 text-gray-800'
@@ -225,7 +241,6 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
               >
                 <option value="NEW">New</option>
                 <option value="CONTACTED">Contacted</option>
-                <option value="QUALIFIED">Qualified</option>
                 <option value="SCHEDULED">Scheduled</option>
                 <option value="CONVERTED">Converted</option>
                 <option value="LOST">Lost</option>
@@ -340,7 +355,16 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-between pt-4 border-t">
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? 'Deleting...' : 'Delete Lead'}
+            </button>
+            <div className="flex gap-3">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
@@ -363,6 +387,7 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
                 Call Lead
               </a>
             )}
+            </div>
           </div>
         </div>
       </div>

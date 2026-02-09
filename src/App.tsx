@@ -10,6 +10,7 @@ import Tags from './pages/Tags';
 import Categories from './pages/Categories';
 import Wishlists from './pages/Wishlists';
 import Settings from './pages/Settings';
+import Customers from './pages/Customers';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" />;
@@ -76,6 +77,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Categories />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Customers />
               </Layout>
             </ProtectedRoute>
           }

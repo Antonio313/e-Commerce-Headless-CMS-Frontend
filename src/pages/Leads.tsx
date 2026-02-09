@@ -160,12 +160,12 @@ export default function Leads() {
                 Contacted
               </button>
               <button
-                onClick={() => setFilter('qualified')}
+                onClick={() => setFilter('scheduled')}
                 className={`px-4 py-2 rounded-md ${
-                  filter === 'qualified' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  filter === 'scheduled' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Qualified
+                Scheduled
               </button>
               <button
                 onClick={() => setFilter('converted')}
@@ -174,6 +174,14 @@ export default function Leads() {
                 }`}
               >
                 Converted
+              </button>
+              <button
+                onClick={() => setFilter('lost')}
+                className={`px-4 py-2 rounded-md ${
+                  filter === 'lost' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Lost
               </button>
             </div>
           </div>
@@ -210,8 +218,8 @@ export default function Leads() {
                           ? 'bg-blue-100 text-blue-800'
                           : lead.status === 'CONTACTED'
                           ? 'bg-purple-100 text-purple-800'
-                          : lead.status === 'QUALIFIED'
-                          ? 'bg-yellow-100 text-yellow-800'
+                          : lead.status === 'SCHEDULED'
+                          ? 'bg-orange-100 text-orange-800'
                           : lead.status === 'CONVERTED'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
@@ -306,8 +314,8 @@ export default function Leads() {
                         ? 'bg-blue-100 text-blue-800'
                         : lead.status === 'CONTACTED'
                         ? 'bg-purple-100 text-purple-800'
-                        : lead.status === 'QUALIFIED'
-                        ? 'bg-yellow-100 text-yellow-800'
+                        : lead.status === 'SCHEDULED'
+                        ? 'bg-orange-100 text-orange-800'
                         : lead.status === 'CONVERTED'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { Package, Users, ShoppingBag, TrendingUp } from 'lucide-react';
+import { Package, Users, UserCircle, ShoppingBag, TrendingUp } from 'lucide-react';
 
 interface Stats {
   total: number;
   new: number;
   contacted: number;
-  qualified: number;
   scheduled: number;
   converted: number;
   lost: number;
@@ -21,20 +20,23 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [productCount, setProductCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [customerCount, setCustomerCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [leadsRes, productsRes, wishlistsRes] = await Promise.all([
+        const [leadsRes, productsRes, wishlistsRes, customersRes] = await Promise.all([
           api.get('/api/admin/leads/stats'),
           api.get('/api/admin/products'),
           api.get('/api/admin/wishlists'),
+          api.get('/api/admin/customers/stats'),
         ]);
 
         setStats(leadsRes.data.stats);
         setProductCount(productsRes.data.pagination.total);
         setWishlistCount(wishlistsRes.data.pagination.total);
+        setCustomerCount(customersRes.data.stats.total);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -61,7 +63,7 @@ export default function Dashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
         <StatCard
           title="Total Products"
           value={productCount}
@@ -73,6 +75,12 @@ export default function Dashboard() {
           value={stats?.total || 0}
           icon={<Users className="w-8 h-8" />}
           color="green"
+        />
+        <StatCard
+          title="Customers"
+          value={customerCount}
+          icon={<UserCircle className="w-8 h-8" />}
+          color="teal"
         />
         <StatCard
           title="Wishlists"
@@ -97,7 +105,6 @@ export default function Dashboard() {
             <div className="space-y-3">
               <PipelineItem label="New" count={stats.new} total={stats.total} color="gray" />
               <PipelineItem label="Contacted" count={stats.contacted} total={stats.total} color="blue" />
-              <PipelineItem label="Qualified" count={stats.qualified} total={stats.total} color="yellow" />
               <PipelineItem label="Scheduled" count={stats.scheduled} total={stats.total} color="purple" />
               <PipelineItem label="Converted" count={stats.converted} total={stats.total} color="green" />
               <PipelineItem label="Lost" count={stats.lost} total={stats.total} color="red" />
@@ -142,6 +149,7 @@ function StatCard({ title, value, icon, color, suffix = '' }: any) {
   const colors: Record<string, string> = {
     blue: 'bg-blue-500',
     green: 'bg-green-500',
+    teal: 'bg-teal-500',
     purple: 'bg-purple-500',
     orange: 'bg-orange-500',
   };

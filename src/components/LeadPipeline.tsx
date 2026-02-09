@@ -21,7 +21,6 @@ interface Lead {
 const PIPELINE_STAGES = [
   { id: 'NEW', name: 'New', color: 'bg-blue-500' },
   { id: 'CONTACTED', name: 'Contacted', color: 'bg-yellow-500' },
-  { id: 'QUALIFIED', name: 'Qualified', color: 'bg-purple-500' },
   { id: 'SCHEDULED', name: 'Scheduled', color: 'bg-orange-500' },
   { id: 'CONVERTED', name: 'Converted', color: 'bg-green-500' },
   { id: 'LOST', name: 'Lost', color: 'bg-gray-500' },
@@ -119,7 +118,7 @@ export default function LeadPipeline() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
         {PIPELINE_STAGES.map((stage) => {
           const stageLeads = getLeadsByStage(stage.id);
           return (

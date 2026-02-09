@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, Users, ShoppingBag, Settings, LogOut, Tag, Tags, FolderTree, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, Users, UserCircle, ShoppingBag, Settings, LogOut, Tag, Tags, FolderTree, Menu, X } from 'lucide-react';
 import { getUser, logout } from '../lib/auth';
 
 interface LayoutProps {
@@ -19,6 +19,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Brands', href: '/brands', icon: Tag },
     { name: 'Tags', href: '/tags', icon: Tags },
     { name: 'Categories', href: '/categories', icon: FolderTree },
+    { name: 'Customers', href: '/customers', icon: UserCircle },
     { name: 'Leads', href: '/leads', icon: Users },
     { name: 'Wishlists', href: '/wishlists', icon: ShoppingBag },
     { name: 'Settings', href: '/settings', icon: Settings },
