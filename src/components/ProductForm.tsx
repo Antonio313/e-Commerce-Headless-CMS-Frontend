@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, ChevronDown, ChevronUp, Sparkles, GripVertical } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, ChevronDown, ChevronUp, Sparkles, GripVertical, Plus } from 'lucide-react';
 import api from '../lib/api';
 import ImageUpload from './ImageUpload';
 import RichTextEditor from './RichTextEditor';
@@ -24,6 +24,23 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
   const [showSEOSection, setShowSEOSection] = useState(false);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!product?.slug);
+
+  // Creatable select state
+  const [brandSearch, setBrandSearch] = useState(product?.brand?.name || '');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [creatingBrand, setCreatingBrand] = useState(false);
+  const [categorySearch, setCategorySearch] = useState(product?.category?.name || '');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [subcategorySearch, setSubcategorySearch] = useState(product?.subcategory?.name || '');
+  const [subcategoryDropdownOpen, setSubcategoryDropdownOpen] = useState(false);
+  const [creatingSubcategory, setCreatingSubcategory] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [creatingTag, setCreatingTag] = useState(false);
+  const brandRef = useRef<HTMLDivElement>(null);
+  const categoryRef = useRef<HTMLDivElement>(null);
+  const subcategoryRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     sku: product?.sku || '',
     name: product?.name || '',
@@ -55,6 +72,23 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
 
   useEffect(() => {
     fetchBrandsAndCategories();
+  }, []);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (brandRef.current && !brandRef.current.contains(event.target as Node)) {
+        setBrandDropdownOpen(false);
+      }
+      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false);
+      }
+      if (subcategoryRef.current && !subcategoryRef.current.contains(event.target as Node)) {
+        setSubcategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Reset form when product prop changes
@@ -89,6 +123,9 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     setCurrentProduct(product);
     setSelectedImages([]);
     setImagePreviews([]);
+    setBrandSearch(product?.brand?.name || '');
+    setCategorySearch(product?.category?.name || '');
+    setSubcategorySearch(product?.subcategory?.name || '');
   }, [product]);
 
   const fetchBrandsAndCategories = async () => {
@@ -112,6 +149,85 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
       setBrands([]);
       setCategories([]);
       setTags([]);
+    }
+  };
+
+  const handleCreateBrand = async (name: string) => {
+    setCreatingBrand(true);
+    try {
+      const response = await api.post('/api/admin/brands', { name });
+      const newBrand = response.data.brand;
+      setBrands(prev => [...prev, newBrand]);
+      setFormData(prev => ({ ...prev, brandId: newBrand.id }));
+      setBrandSearch(newBrand.name);
+      setBrandDropdownOpen(false);
+    } catch (error: any) {
+      console.error('Error creating brand:', error);
+      alert(error.response?.data?.error || 'Failed to create brand');
+    } finally {
+      setCreatingBrand(false);
+    }
+  };
+
+  const handleCreateCategory = async (name: string) => {
+    setCreatingCategory(true);
+    try {
+      const response = await api.post('/api/admin/categories', { name });
+      const newCategory = response.data.category;
+      setCategories(prev => [...prev, newCategory]);
+      setFormData(prev => ({ ...prev, categoryId: newCategory.id, subcategoryId: '' }));
+      setCategorySearch(newCategory.name);
+      setSubcategorySearch('');
+      setCategoryDropdownOpen(false);
+    } catch (error: any) {
+      console.error('Error creating category:', error);
+      alert(error.response?.data?.error || 'Failed to create category');
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const handleCreateSubcategory = async (name: string) => {
+    if (!formData.categoryId) return;
+    setCreatingSubcategory(true);
+    try {
+      const response = await api.post(`/api/admin/categories/${formData.categoryId}/subcategories`, {
+        name,
+        categoryId: formData.categoryId
+      });
+      const newSub = response.data.subcategory;
+      // Update the local categories array to include the new subcategory
+      setCategories(prev => prev.map(cat =>
+        cat.id === formData.categoryId
+          ? { ...cat, subcategories: [...(cat.subcategories || []), newSub] }
+          : cat
+      ));
+      setFormData(prev => ({ ...prev, subcategoryId: newSub.id }));
+      setSubcategorySearch(newSub.name);
+      setSubcategoryDropdownOpen(false);
+    } catch (error: any) {
+      console.error('Error creating subcategory:', error);
+      alert(error.response?.data?.error || 'Failed to create subcategory');
+    } finally {
+      setCreatingSubcategory(false);
+    }
+  };
+
+  const handleCreateTag = async () => {
+    const trimmedName = newTagName.trim();
+    if (!trimmedName) return;
+    setCreatingTag(true);
+    try {
+      const response = await api.post('/api/admin/tags', { name: trimmedName });
+      const newTag = response.data.tag;
+      setTags(prev => [...prev, newTag]);
+      setFormData(prev => ({ ...prev, tagIds: [...prev.tagIds, newTag.id] }));
+      setNewTagName('');
+    } catch (error: any) {
+      console.error('Error creating tag:', error);
+      alert(error.response?.data?.error || 'Failed to create tag');
+    } finally {
+      setCreatingTag(false);
     }
   };
 
@@ -236,6 +352,18 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
     };
 
     try {
+      // Validate required fields (brand/category are now custom dropdowns without native required)
+      if (!formData.brandId) {
+        alert('Please select or create a brand.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.categoryId) {
+        alert('Please select or create a category.');
+        setLoading(false);
+        return;
+      }
+
       // Validate SKU for duplicates
       const isUniqueSKU = await validateSKU(formData.sku);
       if (!isUniqueSKU) {
@@ -492,64 +620,175 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Category & Brand</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+              <div ref={brandRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Brand <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="brandId"
-                  value={formData.brandId}
-                  onChange={handleChange}
-                  required
+                <input
+                  type="text"
+                  value={brandSearch}
+                  onChange={(e) => {
+                    setBrandSearch(e.target.value);
+                    setBrandDropdownOpen(true);
+                    if (!e.target.value) {
+                      setFormData(prev => ({ ...prev, brandId: '' }));
+                    }
+                  }}
+                  onFocus={() => setBrandDropdownOpen(true)}
+                  placeholder="Search or create brand..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Brand</option>
-                  {brands.map((brand: any) => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                />
+                {brandDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {brands
+                      .filter((b: any) => b.name.toLowerCase().includes(brandSearch.toLowerCase()))
+                      .map((brand: any) => (
+                        <button
+                          key={brand.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, brandId: brand.id }));
+                            setBrandSearch(brand.name);
+                            setBrandDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                            formData.brandId === brand.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {brand.name}
+                        </button>
+                      ))
+                    }
+                    {brandSearch.trim() && !brands.some((b: any) =>
+                      b.name.toLowerCase() === brandSearch.trim().toLowerCase()
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCreateBrand(brandSearch.trim())}
+                        disabled={creatingBrand}
+                        className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 font-medium flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {creatingBrand ? 'Creating...' : `Create "${brandSearch.trim()}"`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div ref={categoryRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleChange}
-                  required
+                <input
+                  type="text"
+                  value={categorySearch}
+                  onChange={(e) => {
+                    setCategorySearch(e.target.value);
+                    setCategoryDropdownOpen(true);
+                    if (!e.target.value) {
+                      setFormData(prev => ({ ...prev, categoryId: '', subcategoryId: '' }));
+                      setSubcategorySearch('');
+                    }
+                  }}
+                  onFocus={() => setCategoryDropdownOpen(true)}
+                  placeholder="Search or create category..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((category: any) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                />
+                {categoryDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {categories
+                      .filter((c: any) => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                      .map((category: any) => (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, categoryId: category.id, subcategoryId: '' }));
+                            setCategorySearch(category.name);
+                            setSubcategorySearch('');
+                            setCategoryDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                            formData.categoryId === category.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {category.name}
+                        </button>
+                      ))
+                    }
+                    {categorySearch.trim() && !categories.some((c: any) =>
+                      c.name.toLowerCase() === categorySearch.trim().toLowerCase()
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCreateCategory(categorySearch.trim())}
+                        disabled={creatingCategory}
+                        className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 font-medium flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {creatingCategory ? 'Creating...' : `Create "${categorySearch.trim()}"`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div ref={subcategoryRef} className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Subcategory
                 </label>
-                <select
-                  name="subcategoryId"
-                  value={formData.subcategoryId}
-                  onChange={handleChange}
+                <input
+                  type="text"
+                  value={subcategorySearch}
+                  onChange={(e) => {
+                    setSubcategorySearch(e.target.value);
+                    setSubcategoryDropdownOpen(true);
+                    if (!e.target.value) {
+                      setFormData(prev => ({ ...prev, subcategoryId: '' }));
+                    }
+                  }}
+                  onFocus={() => formData.categoryId && setSubcategoryDropdownOpen(true)}
                   disabled={!formData.categoryId}
+                  placeholder={formData.categoryId ? 'Search or create subcategory...' : 'Select a category first'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                >
-                  <option value="">Select Subcategory</option>
-                  {selectedCategory?.subcategories?.map((sub: any) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
+                />
+                {subcategoryDropdownOpen && formData.categoryId && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {(selectedCategory?.subcategories || [])
+                      .filter((sub: any) => sub.name.toLowerCase().includes(subcategorySearch.toLowerCase()))
+                      .map((sub: any) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, subcategoryId: sub.id }));
+                            setSubcategorySearch(sub.name);
+                            setSubcategoryDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                            formData.subcategoryId === sub.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      ))
+                    }
+                    {subcategorySearch.trim() && !(selectedCategory?.subcategories || []).some((sub: any) =>
+                      sub.name.toLowerCase() === subcategorySearch.trim().toLowerCase()
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCreateSubcategory(subcategorySearch.trim())}
+                        disabled={creatingSubcategory}
+                        className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-200 font-medium flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        {creatingSubcategory ? 'Creating...' : `Create "${subcategorySearch.trim()}"`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -595,6 +834,30 @@ export default function ProductForm({ product, onClose, onSuccess }: ProductForm
                   );
                 })
               )}
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateTag();
+                  }
+                }}
+                placeholder="New tag name..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleCreateTag}
+                disabled={creatingTag || !newTagName.trim()}
+                className="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                {creatingTag ? '...' : 'Add'}
+              </button>
             </div>
             <p className="text-xs text-gray-500 mt-3">
               Selected: {formData.tagIds.length} tag{formData.tagIds.length !== 1 ? 's' : ''}
